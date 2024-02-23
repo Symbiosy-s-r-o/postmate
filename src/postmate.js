@@ -1,15 +1,8 @@
-
 /**
  * The type of messages our frames our sending
  * @type {String}
  */
 export const messageType = 'application/x-postmate-v1+json'
-
-/**
- * The maximum number of attempts to send a handshake request to the parent
- * @type {Number}
- */
-export const maxHandshakeRequests = 5
 
 /**
  * A unique message ID that is used to ensure responses are sent to the correct requests
@@ -27,7 +20,7 @@ export const generateNewMessageId = () => ++_messageId
  * Postmate logging function that enables/disables via config
  * @param  {Object} ...args Rest Arguments
  */
-export const log = (...args) => Postmate.debug ? console.log(...args) : null // eslint-disable-line no-console
+export const log = (...args) => (Postmate.debug ? console.log(...args) : null) // eslint-disable-line no-console
 
 /**
  * Takes a URL and returns the origin
@@ -37,8 +30,13 @@ export const log = (...args) => Postmate.debug ? console.log(...args) : null // 
 export const resolveOrigin = (url) => {
   const a = document.createElement('a')
   a.href = url
-  const protocol = a.protocol.length > 4 ? a.protocol : window.location.protocol
-  const host = a.host.length ? ((a.port === '80' || a.port === '443') ? a.hostname : a.host) : window.location.host
+  const protocol =
+    a.protocol.length > 4 ? a.protocol : window.location.protocol
+  const host = a.host.length
+    ? a.port === '80' || a.port === '443'
+      ? a.hostname
+      : a.host
+    : window.location.host
   return a.origin || `${protocol}//${host}`
 }
 
@@ -58,15 +56,9 @@ const messageTypes = {
  * @return {Boolean}
  */
 export const sanitize = (message, allowedOrigin) => {
-  if (
-    typeof allowedOrigin === 'string' &&
-    message.origin !== allowedOrigin
-  ) return false
+  if (typeof allowedOrigin === 'string' && message.origin !== allowedOrigin) { return false }
   if (!message.data) return false
-  if (
-    typeof message.data === 'object' &&
-    !('postmate' in message.data)
-  ) return false
+  if (typeof message.data === 'object' && !('postmate' in message.data)) { return false }
   if (message.data.type !== messageType) return false
   if (!messageTypes[message.data.postmate]) return false
   return true
@@ -81,8 +73,8 @@ export const sanitize = (message, allowedOrigin) => {
  * @return {Promise}
  */
 export const resolveValue = (model, property) => {
-  const unwrappedContext = typeof model[property] === 'function'
-    ? model[property]() : model[property]
+  const unwrappedContext =
+    typeof model[property] === 'function' ? model[property]() : model[property]
   return Postmate.Promise.resolve(unwrappedContext)
 }
 
@@ -110,14 +102,14 @@ export class ParentAPI {
       /**
        * the assignments below ensures that e, data, and value are all defined
        */
-      const { data, name } = (((e || {}).data || {}).value || {})
+      const { data, name } = ((e || {}).data || {}).value || {}
 
       if (e.data.postmate === 'emit') {
         if (process.env.NODE_ENV !== 'production') {
           log(`Parent: Received event emission: ${name}`)
         }
         if (name in this.events) {
-          this.events[name].forEach(callback => {
+          this.events[name].forEach((callback) => {
             callback.call(this, data)
           })
         }
@@ -145,23 +137,29 @@ export class ParentAPI {
       this.parent.addEventListener('message', transact, false)
 
       // Then ask child for information
-      this.child.postMessage({
-        postmate: 'request',
-        type: messageType,
-        property,
-        uid,
-      }, this.childOrigin)
+      this.child.postMessage(
+        {
+          postmate: 'request',
+          type: messageType,
+          property,
+          uid,
+        },
+        this.childOrigin,
+      )
     })
   }
 
   call (property, data) {
     // Send information to the child
-    this.child.postMessage({
-      postmate: 'call',
-      type: messageType,
-      property,
-      data,
-    }, this.childOrigin)
+    this.child.postMessage(
+      {
+        postmate: 'call',
+        type: messageType,
+        property,
+        data,
+      },
+      this.childOrigin,
+    )
   }
 
   on (eventName, callback) {
@@ -206,21 +204,28 @@ export class ChildAPI {
       const { property, uid, data } = e.data
 
       if (e.data.postmate === 'call') {
-        if (property in this.model && typeof this.model[property] === 'function') {
+        if (
+          property in this.model &&
+          typeof this.model[property] === 'function'
+        ) {
           this.model[property](data)
         }
         return
       }
 
       // Reply to Parent
-      resolveValue(this.model, property)
-        .then(value => e.source.postMessage({
-          property,
-          postmate: 'reply',
-          type: messageType,
-          uid,
-          value,
-        }, e.origin))
+      resolveValue(this.model, property).then((value) =>
+        e.source.postMessage(
+          {
+            property,
+            postmate: 'reply',
+            type: messageType,
+            uid,
+            value,
+          },
+          e.origin,
+        ),
+      )
     })
   }
 
@@ -228,23 +233,26 @@ export class ChildAPI {
     if (process.env.NODE_ENV !== 'production') {
       log(`Child: Emitting Event "${name}"`, data)
     }
-    this.parent.postMessage({
-      postmate: 'emit',
-      type: messageType,
-      value: {
-        name,
-        data,
+    this.parent.postMessage(
+      {
+        postmate: 'emit',
+        type: messageType,
+        value: {
+          name,
+          data,
+        },
       },
-    }, this.parentOrigin)
+      this.parentOrigin,
+    )
   }
 }
 
 /**
-  * The entry point of the Parent.
+ * The entry point of the Parent.
  * @type {Class}
  */
 class Postmate {
-  static debug = false // eslint-disable-line no-undef
+  static debug = false; // eslint-disable-line no-undef
 
   // Internet Explorer craps itself
   static Promise = (() => {
@@ -253,7 +261,7 @@ class Postmate {
     } catch (e) {
       return null
     }
-  })()
+  })();
 
   /**
    * Sets options related to the Parent
@@ -266,14 +274,18 @@ class Postmate {
     url,
     name,
     classListArray = [],
-  }) { // eslint-disable-line no-undef
+    maxHandshakeRequests,
+  }) {
+    // eslint-disable-line no-undef
     this.parent = window
     this.frame = document.createElement('iframe')
     this.frame.name = name || ''
     this.frame.classList.add.apply(this.frame.classList, classListArray)
     container.appendChild(this.frame)
-    this.child = this.frame.contentWindow || this.frame.contentDocument.parentWindow
+    this.child =
+      this.frame.contentWindow || this.frame.contentDocument.parentWindow
     this.model = model || {}
+    this.maxHandshakeRequests = maxHandshakeRequests
 
     return this.sendHandshake(url)
   }
@@ -318,13 +330,16 @@ class Postmate {
         if (process.env.NODE_ENV !== 'production') {
           log(`Parent: Sending handshake attempt ${attempt}`, { childOrigin })
         }
-        this.child.postMessage({
-          postmate: 'handshake',
-          type: messageType,
-          model: this.model,
-        }, childOrigin)
+        this.child.postMessage(
+          {
+            postmate: 'handshake',
+            type: messageType,
+            model: this.model,
+          },
+          childOrigin,
+        )
 
-        if (attempt === maxHandshakeRequests) {
+        if (attempt === this.maxHandshakeRequests) {
           clearInterval(responseInterval)
         }
       }
@@ -383,16 +398,19 @@ Postmate.Model = class Model {
           if (process.env.NODE_ENV !== 'production') {
             log('Child: Sending handshake reply to Parent')
           }
-          e.source.postMessage({
-            postmate: 'handshake-reply',
-            type: messageType,
-          }, e.origin)
+          e.source.postMessage(
+            {
+              postmate: 'handshake-reply',
+              type: messageType,
+            },
+            e.origin,
+          )
           this.parentOrigin = e.origin
 
           // Extend model with the one provided by the parent
           const defaults = e.data.model
           if (defaults) {
-            Object.keys(defaults).forEach(key => {
+            Object.keys(defaults).forEach((key) => {
               this.model[key] = defaults[key]
             })
             if (process.env.NODE_ENV !== 'production') {

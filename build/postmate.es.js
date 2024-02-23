@@ -11,12 +11,6 @@
  */
 var messageType = 'application/x-postmate-v1+json';
 /**
- * The maximum number of attempts to send a handshake request to the parent
- * @type {Number}
- */
-
-var maxHandshakeRequests = 5;
-/**
  * A unique message ID that is used to ensure responses are sent to the correct requests
  * @type {Number}
  */
@@ -70,9 +64,16 @@ var messageTypes = {
 
 };
 var sanitize = function sanitize(message, allowedOrigin) {
-  if (typeof allowedOrigin === 'string' && message.origin !== allowedOrigin) return false;
+  if (typeof allowedOrigin === 'string' && message.origin !== allowedOrigin) {
+    return false;
+  }
+
   if (!message.data) return false;
-  if (typeof message.data === 'object' && !('postmate' in message.data)) return false;
+
+  if (typeof message.data === 'object' && !('postmate' in message.data)) {
+    return false;
+  }
+
   if (message.data.type !== messageType) return false;
   if (!messageTypes[message.data.postmate]) return false;
   return true;
@@ -275,7 +276,7 @@ function () {
   return ChildAPI;
 }();
 /**
-  * The entry point of the Parent.
+ * The entry point of the Parent.
  * @type {Class}
  */
 
@@ -297,7 +298,8 @@ function () {
         url = _ref2.url,
         name = _ref2.name,
         _ref2$classListArray = _ref2.classListArray,
-        classListArray = _ref2$classListArray === void 0 ? [] : _ref2$classListArray;
+        classListArray = _ref2$classListArray === void 0 ? [] : _ref2$classListArray,
+        maxHandshakeRequests = _ref2.maxHandshakeRequests;
     // eslint-disable-line no-undef
     this.parent = window;
     this.frame = document.createElement('iframe');
@@ -306,6 +308,7 @@ function () {
     container.appendChild(this.frame);
     this.child = this.frame.contentWindow || this.frame.contentDocument.parentWindow;
     this.model = model || {};
+    this.maxHandshakeRequests = maxHandshakeRequests;
     return this.sendHandshake(url);
   }
   /**
@@ -371,7 +374,7 @@ function () {
           model: _this4.model
         }, childOrigin);
 
-        if (attempt === maxHandshakeRequests) {
+        if (attempt === _this4.maxHandshakeRequests) {
           clearInterval(responseInterval);
         }
       };
