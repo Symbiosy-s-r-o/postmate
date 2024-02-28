@@ -188,6 +188,9 @@ export class ChildAPI {
     this.parent = info.parent
     this.parentOrigin = info.parentOrigin
     this.child = info.child
+    // eslint-disable-next-line no-debugger
+    debugger
+    this.isCallAuthorizedCallback = info.isCallAuthorizedCallback
 
     if (process.env.NODE_ENV !== 'production') {
       log('Child: Registering API')
@@ -204,6 +207,11 @@ export class ChildAPI {
       const { property, uid, data } = e.data
 
       if (e.data.postmate === 'call') {
+        if (!this.isCallAuthorizedCallback(property, data)) {
+          log('Child: Call', property, 'is not authorized')
+          return
+        }
+
         if (
           property in this.model &&
           typeof this.model[property] === 'function'
@@ -373,10 +381,11 @@ Postmate.Model = class Model {
    * @param {Object} model Hash of values, functions, or promises
    * @return {Promise}       The Promise that resolves when the handshake has been received
    */
-  constructor (model) {
+  constructor (model, isCallAuthorizedCallback) {
     this.child = window
     this.model = model
     this.parent = this.child.parent
+    this.isCallAuthorizedCallback = isCallAuthorizedCallback
     return this.sendHandshakeReply()
   }
 

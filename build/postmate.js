@@ -218,7 +218,10 @@ function () {
     this.model = info.model;
     this.parent = info.parent;
     this.parentOrigin = info.parentOrigin;
-    this.child = info.child;
+    this.child = info.child; // eslint-disable-next-line no-debugger
+
+    debugger;
+    this.isCallAuthorizedCallback = info.isCallAuthorizedCallback;
 
     if (process.env.NODE_ENV !== 'production') {
       log('Child: Registering API');
@@ -238,6 +241,11 @@ function () {
           data = _e$data.data;
 
       if (e.data.postmate === 'call') {
+        if (!_this3.isCallAuthorizedCallback(property, data)) {
+          log('Child: Call', property, 'is not authorized');
+          return;
+        }
+
         if (property in _this3.model && typeof _this3.model[property] === 'function') {
           _this3.model[property](data);
         }
@@ -428,10 +436,11 @@ function () {
    * @param {Object} model Hash of values, functions, or promises
    * @return {Promise}       The Promise that resolves when the handshake has been received
    */
-  function Model(model) {
+  function Model(model, isCallAuthorizedCallback) {
     this.child = window;
     this.model = model;
     this.parent = this.child.parent;
+    this.isCallAuthorizedCallback = isCallAuthorizedCallback;
     return this.sendHandshakeReply();
   }
   /**
