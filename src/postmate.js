@@ -188,8 +188,6 @@ export class ChildAPI {
     this.parent = info.parent
     this.parentOrigin = info.parentOrigin
     this.child = info.child
-    // eslint-disable-next-line no-debugger
-    debugger
     this.isCallAuthorizedCallback = info.isCallAuthorizedCallback
 
     if (process.env.NODE_ENV !== 'production') {
